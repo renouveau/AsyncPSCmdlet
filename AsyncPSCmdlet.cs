@@ -739,6 +739,11 @@ namespace Renouveau.ForPowerShell
         throw new ArgumentNullException("action");
       }
 
+      private static void ThrowErrorRecord()
+      {
+        throw new ArgumentNullException("errorRecord");
+      }
+
       #region fire-and-forget
 
       /// <summary>
@@ -794,6 +799,26 @@ namespace Renouveau.ForPowerShell
             ThrowExpired();
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteObject2, postToPipeline, enumerateCollection ? this : null, null));
+        }
+      }
+
+      /// <summary>
+      /// Posts a request to call <c><see cref="Cmdlet.WriteError(ErrorRecord)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// </summary>
+      public void WriteErrorAndForget(ErrorRecord errorRecord)
+      {
+        if (errorRecord is null)
+          ThrowErrorRecord();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteError, errorRecord, null, null));
         }
       }
 
@@ -859,6 +884,28 @@ namespace Renouveau.ForPowerShell
           TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteObject2, sendToPipeline, enumerateCollection ? this : null, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.WriteError(ErrorRecord)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// </summary>
+      public Task WriteErrorAsync(ErrorRecord errorRecord)
+      {
+        if (errorRecord is null)
+          ThrowErrorRecord();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteError, errorRecord, null, source));
           return source.Task;
         }
       }
