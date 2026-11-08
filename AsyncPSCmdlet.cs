@@ -185,4 +185,28 @@ namespace Renouveau.ForPowerShell
 
   #endregion PipelineStopToken, StopProcessingToken, ShouldStop, ThrowIfShouldStop, StopProcessing, StopProcessingExtras
 
+  #region CallbackKind
+
+  public abstract partial class AsyncPSCmdlet
+  {
+    private enum CallbackKind
+    {
+      Invalid,
+      Action,
+      WriteObject1,
+      WriteObject2,
+      WriteError,
+      ThrowTerminatingError,
+      WriteWarning,
+      WriteVerbose,
+      WriteDebug,
+      WriteInformation1,
+      WriteInformation2,
+      WriteProgress,
+      WriteCommandDetail,
+    }
+  }
+
+  #endregion CallbackKind
+
 }
