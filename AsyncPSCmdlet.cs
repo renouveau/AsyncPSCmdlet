@@ -754,6 +754,11 @@ namespace Renouveau.ForPowerShell
         throw new ArgumentNullException("informationRecord");
       }
 
+      private static void ThrowProgressRecord()
+      {
+        throw new ArgumentNullException("progressRecord");
+      }
+
       #region fire-and-forget
 
       /// <summary>
@@ -955,6 +960,27 @@ namespace Renouveau.ForPowerShell
             ThrowExpired();
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteInformation2, messageData, tags, null));
+        }
+      }
+
+      /// <summary>
+      /// Posts a request to call <c><see cref="Cmdlet.WriteProgress(ProgressRecord)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="progressRecord"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public void WriteProgressAndForget(ProgressRecord progressRecord)
+      {
+        if (progressRecord is null)
+          ThrowProgressRecord();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteProgress, progressRecord, null, null));
         }
       }
 
@@ -1199,6 +1225,29 @@ namespace Renouveau.ForPowerShell
           TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteInformation2, messageData, tags, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.WriteProgress(ProgressRecord)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="progressRecord"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public Task WriteProgressAsync(ProgressRecord progressRecord)
+      {
+        if (progressRecord is null)
+          ThrowProgressRecord();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteProgress, progressRecord, null, source));
           return source.Task;
         }
       }
