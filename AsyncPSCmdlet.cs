@@ -744,6 +744,11 @@ namespace Renouveau.ForPowerShell
         throw new ArgumentNullException("errorRecord");
       }
 
+      private static void ThrowText()
+      {
+        throw new ArgumentNullException("text");
+      }
+
       #region fire-and-forget
 
       /// <summary>
@@ -844,6 +849,90 @@ namespace Renouveau.ForPowerShell
           Callbacks.Enqueue(new Callback(CallbackKind.ThrowTerminatingError, errorRecord, null, null));
         }
         throw new PipelineStoppedException("The method 'ThrowTerminatingErrorAndForget' has been called.");
+      }
+
+      /// <summary>
+      /// Posts a request to call <c><see cref="Cmdlet.WriteWarning(string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="text"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public void WriteWarningAndForget(string text)
+      {
+        if (text is null)
+          ThrowText();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteWarning, text, null, null));
+        }
+      }
+
+      /// <summary>
+      /// Posts a request to call <c><see cref="Cmdlet.WriteVerbose(string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="text"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public void WriteVerboseAndForget(string text)
+      {
+        if (text is null)
+          ThrowText();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteVerbose, text, null, null));
+        }
+      }
+
+      /// <summary>
+      /// Posts a request to call <c><see cref="Cmdlet.WriteDebug(string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="text"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public void WriteDebugAndForget(string text)
+      {
+        if (text is null)
+          ThrowText();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteDebug, text, null, null));
+        }
+      }
+
+      /// <summary>
+      /// Posts a request to call <c><see cref="Cmdlet.WriteCommandDetail(string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="text"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public void WriteCommandDetailAndForget(string text)
+      {
+        if (text is null)
+          ThrowText();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteCommandDetail, text, null, null));
+        }
       }
 
       #endregion fire-and-forget
@@ -956,6 +1045,98 @@ namespace Renouveau.ForPowerShell
           Callbacks.Enqueue(new Callback(CallbackKind.ThrowTerminatingError, errorRecord, null, null));
         }
         throw new PipelineStoppedException("The method 'ThrowTerminatingErrorAsync' has been called.");
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.WriteWarning(string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="text"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public Task WriteWarningAsync(string text)
+      {
+        if (text is null)
+          ThrowText();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteWarning, text, null, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.WriteVerbose(string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="text"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public Task WriteVerboseAsync(string text)
+      {
+        if (text is null)
+          ThrowText();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteVerbose, text, null, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.WriteDebug(string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="text"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public Task WriteDebugAsync(string text)
+      {
+        if (text is null)
+          ThrowText();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteDebug, text, null, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.WriteCommandDetail(string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="text"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public Task WriteCommandDetailAsync(string text)
+      {
+        if (text is null)
+          ThrowText();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteCommandDetail, text, null, source));
+          return source.Task;
+        }
       }
 
       #endregion awaited tasks
