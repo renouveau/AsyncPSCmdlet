@@ -260,7 +260,7 @@ namespace Renouveau.ForPowerShell
     private enum CallbackKind
     {
       Invalid,
-      Action,
+      Invoke,
       WriteObject1,
       WriteObject2,
       WriteError,
@@ -334,7 +334,7 @@ namespace Renouveau.ForPowerShell
           case CallbackKind.Invalid:
             ProcessInvalid();
             return;
-          case CallbackKind.Action:
+          case CallbackKind.Invoke:
             if (e is null)
               ((Action)Param1!)();
             // Skip any fire-and-forget delegates
@@ -385,7 +385,7 @@ namespace Renouveau.ForPowerShell
           case CallbackKind.Invalid:
             ProcessInvalid();
             return;
-          case CallbackKind.Action:
+          case CallbackKind.Invoke:
             if (e is null)
               ReceiveAction(sink);
             else
@@ -772,7 +772,7 @@ namespace Renouveau.ForPowerShell
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
           Monitor.PulseAll(sr);
-          Callbacks.Enqueue(new Callback(CallbackKind.Action, action, null, null));
+          Callbacks.Enqueue(new Callback(CallbackKind.Invoke, action, null, null));
         }
       }
 
@@ -1000,7 +1000,7 @@ namespace Renouveau.ForPowerShell
             ThrowExpired();
           TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
-          Callbacks.Enqueue(new Callback(CallbackKind.Action, action, null, source));
+          Callbacks.Enqueue(new Callback(CallbackKind.Invoke, action, null, source));
           return source.Task;
         }
       }
