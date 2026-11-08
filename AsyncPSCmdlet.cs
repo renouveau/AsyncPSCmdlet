@@ -457,6 +457,7 @@ namespace Renouveau.ForPowerShell
         {
           default:
           case CallbackKind.Invalid:
+          case CallbackKind.ThrowTerminatingError:
             ProcessSendInvalid();
             return;
           case CallbackKind.Invoke:
@@ -476,9 +477,6 @@ namespace Renouveau.ForPowerShell
             return;
           case CallbackKind.WriteError:
             ReceiveWriteError(cmdlet, sink);
-            return;
-          case CallbackKind.ThrowTerminatingError:
-            ReceiveThrowTerminatingError(cmdlet, sink);
             return;
           case CallbackKind.WriteWarning:
             ReceiveWriteWarning(cmdlet, sink);
@@ -586,21 +584,6 @@ namespace Renouveau.ForPowerShell
         catch (Exception e)
         {
           sink.TrySetException(e);
-        }
-      }
-
-      private void ReceiveThrowTerminatingError(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
-      {
-        try
-        {
-          cmdlet.ThrowTerminatingError((ErrorRecord)Param1!);
-          sink.TrySetResult(false);
-        }
-        catch (Exception e)
-        {
-          sink.TrySetException(e);
-          // Propagate this terminating error.
-          throw;
         }
       }
 
