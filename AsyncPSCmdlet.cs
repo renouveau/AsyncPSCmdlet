@@ -95,8 +95,9 @@ namespace Renouveau.ForPowerShell
     /// <summary>
     /// For PowerShell 7.6+, the same as <c><see cref="Cmdlet"/>.PipelineStopToken</c>;
     /// for lower versions, returns <c><see cref="CancellationToken.None"/></c>.
+    /// This property can be retrieved from any thread.
     /// </summary>
-    public CancellationToken PipelineStopToken
+    public /* new */ CancellationToken PipelineStopToken
     {
       get { return get_PipelineStopToken_(this); }
     }
@@ -104,6 +105,7 @@ namespace Renouveau.ForPowerShell
     /// <summary>
     /// Gets the token that is canceled by <c><see cref="StopProcessing()"/></c>.
     /// This is <em>separate</em> from <c><see cref="PipelineStopToken"/></c>.
+    /// This property can be retrieved from any thread.
     /// </summary>
     public CancellationToken StopProcessingToken
     {
@@ -112,6 +114,7 @@ namespace Renouveau.ForPowerShell
 
     /// <summary>
     /// Gets whether processing should stop.
+    /// This property can be retrieved from any thread.
     /// </summary>
     public bool ShouldStop
     {
@@ -124,6 +127,7 @@ namespace Renouveau.ForPowerShell
 
     /// <summary>
     /// Throws <c><see cref="PipelineStoppedException"/></c> if <c><see cref="ShouldStop"/></c> is <c><see langword="true"/></c>.
+    /// This method can be called from any thread.
     /// </summary>
     protected void ThrowIfShouldStop()
     {
