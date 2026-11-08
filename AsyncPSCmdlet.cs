@@ -245,7 +245,7 @@ namespace Renouveau.ForPowerShell
     }
 
     /// <summary>
-    /// This method is called by <c><see cref="StopProcessing()"/></c>.
+    /// This method is called by <c><see cref="StopProcessing()"/></c> and must be prepared to be called from any thread.
     /// The default implementation does nothing.
     /// </summary>
     protected virtual void StopProcessingExtras() { }
@@ -621,6 +621,49 @@ namespace Renouveau.ForPowerShell
     /// Represents a work item submitted to the thread pool by <c><see cref="AsyncPSCmdlet"/></c>
     /// and
     /// provides the cmdlet services from any thread for the duration of the work item.
+    /// <list type="bullet">
+    /// <item>
+    /// Entry to public methods is validated eagerly and exceptions are thrown synchronously.
+    /// This is true even for <c>XxxAsync</c>.
+    /// </item>
+    /// <item>
+    /// Public methods <c>XxxAndForget</c> are fire-and-forget.
+    /// Exceptions thrown by the delegate or during <c>WriteXxx</c> cause the work item to expire.
+    /// </item>
+    /// <item>
+    /// Public methods <c>XxxAsync</c> produce (awaitable) tasks.
+    /// Exceptions thrown by the delegate or during <c>WriteXxx</c> are reported back to the task.
+    /// </item>
+    /// <item>
+    /// A work item expires
+    /// when the pipeline is stopped,
+    /// when <c><see cref="Cmdlet.StopProcessing()"/></c> is called,
+    /// when an exception escapes fire-and-forget methods on the thread of <c><see cref="AsyncPSCmdlet"/></c>,
+    /// when the work completes,
+    /// whichever is the earliest.
+    /// When a work item expires, further calls to communications methods fail synchronously.
+    /// </item>
+    /// <item>
+    /// When a work item expires, all pending communication calls are accelerated.
+    /// <list type="bullet">
+    /// <item>PowerShell stream writes are attempted until stopping.</item>
+    /// <item>Delegates are not attempted.</item>
+    /// <item>A best-effort notification of failure is made to all outstanding tasks.</item>
+    /// </list>
+    /// </item>
+    /// </list>
+    /// Communication methods on this object can<em>not</em> be called from the thread of the owning <c><see cref="AsyncPSCmdlet"/></c>, by design.
+    /// <list type="bullet">
+    /// <item>
+    /// If the call happens directly in a delegate posted/sent by
+    /// <c><see cref="InvokeAndForget(Action)"/></c> or <c><see cref="InvokeAsync(Action)"/></c>,
+    /// use the methods on <c><see cref="Cmdlet"/></c>.
+    /// </item>
+    /// <item>
+    /// If you set up a nested message loop in a delegate,
+    /// the call cannot preserve queueing semantics without risking deadlock.
+    /// </item>
+    /// </list>
     /// </summary>
     [DebuggerDisplay(nameof(Expired) + " = {" + nameof(Expired) + "}, " + nameof(Name) + " = {" + nameof(Name) + ", nq}")]
     protected sealed class TransientDispatcher : ITransientDispatcher
@@ -636,6 +679,7 @@ namespace Renouveau.ForPowerShell
 
       /// <summary>
       /// Gets a description of the work item.
+      /// This property can be retrieved from any thread.
       /// </summary>
       public string Name { get; }
 
@@ -645,6 +689,7 @@ namespace Renouveau.ForPowerShell
 
       /// <summary>
       /// Determines whether the work item has expired.
+      /// This property can be retrieved from any thread.
       /// </summary>
       public bool Expired { get; private set; }
 
@@ -691,8 +736,6 @@ namespace Renouveau.ForPowerShell
 
       /// <summary>
       /// Posts a delegate to the <c><see cref="AsyncPSCmdlet"/></c>.
-      /// This is a fire-and-forget method.
-      /// Any exception thrown out of <c><paramref name="action"/></c> will cause the work item to expire.
       /// </summary>
       public void InvokeAndForget(Action action)
       {
@@ -711,8 +754,6 @@ namespace Renouveau.ForPowerShell
 
       /// <summary>
       /// Posts a request to call <c><see cref="Cmdlet.WriteObject(object)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
-      /// This is a fire-and-forget method.
-      /// Any exception thrown during the call will cause the work item to expire.
       /// </summary>
       public void WriteObjectAndForget(object? postToPipeline)
       {
@@ -729,8 +770,6 @@ namespace Renouveau.ForPowerShell
 
       /// <summary>
       /// Posts a request to call <c><see cref="Cmdlet.WriteObject(object, bool)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
-      /// This is a fire-and-forget method.
-      /// Any exception thrown during the call will cause the work item to expire.
       /// </summary>
       public void WriteObjectAndForget(object? postToPipeline, bool enumerateCollection)
       {
@@ -750,7 +789,7 @@ namespace Renouveau.ForPowerShell
       #region awaited tasks
 
       /// <summary>
-      /// Sends a delegate to the <c><see cref="AsyncPSCmdlet"/></c> and propagates the exception back.
+      /// Sends a delegate to the <c><see cref="AsyncPSCmdlet"/></c>.
       /// </summary>
       public Task InvokeAsync(Action action)
       {
