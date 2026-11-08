@@ -850,7 +850,7 @@ namespace Renouveau.ForPowerShell
       }
 
       /// <summary>
-      /// Posts a request to call <c><see cref="Cmdlet.WriteError(ErrorRecord)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>
+      /// Posts a request to call <c><see cref="Cmdlet.ThrowTerminatingError(ErrorRecord)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>
       /// and
       /// throws <c><see cref="PipelineStoppedException"/></c>.
       /// </summary>
