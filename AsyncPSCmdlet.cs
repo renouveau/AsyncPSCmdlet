@@ -1627,6 +1627,7 @@ namespace Renouveau.ForPowerShell
 
   public abstract partial class AsyncPSCmdlet
   {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static readonly ITransientDispatcher TransientDispatcherFactory = (ITransientDispatcher)FormatterServices.GetUninitializedObject(typeof(TransientDispatcher));
 
     private ITransientDispatcher? CurrentWorkItem;
