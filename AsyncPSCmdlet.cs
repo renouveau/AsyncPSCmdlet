@@ -248,7 +248,11 @@ namespace Renouveau.ForPowerShell
 
       internal void ProcessBeforeStop(Cmdlet cmdlet, Exception? e)
       {
-        throw new NotImplementedException();
+        TaskCompletionSource<object?>? sink = Sink;
+        if (sink is null)
+          ProcessPostBeforeStop(cmdlet, e);
+        else
+          ProcessSendBeforeStop(cmdlet, e, sink);
       }
 
       internal void ProcessAfterStop(Exception? e)
@@ -260,6 +264,64 @@ namespace Renouveau.ForPowerShell
           sink.TrySetCanceled();
         else
           sink.TrySetException(e);
+      }
+
+      private void ProcessPostBeforeStop(Cmdlet cmdlet, Exception? e)
+      {
+        switch (Kind)
+        {
+          default:
+          case CallbackKind.Invalid:
+            ProcessInvalid();
+            return;
+          case CallbackKind.Action:
+            if (e is null)
+              ((Action)Param1!)();
+            return;
+          case CallbackKind.WriteObject1:
+            cmdlet.WriteObject(Param1!);
+            return;
+          case CallbackKind.WriteObject2:
+            cmdlet.WriteObject(Param1!, Param2 is not null);
+            return;
+          case CallbackKind.WriteError:
+            cmdlet.WriteError((ErrorRecord)Param1!);
+            return;
+          case CallbackKind.ThrowTerminatingError:
+            cmdlet.ThrowTerminatingError((ErrorRecord)Param1!);
+            return;
+          case CallbackKind.WriteWarning:
+            cmdlet.WriteWarning((string)Param1!);
+            return;
+          case CallbackKind.WriteVerbose:
+            cmdlet.WriteVerbose((string)Param1!);
+            return;
+          case CallbackKind.WriteDebug:
+            cmdlet.WriteDebug((string)Param1!);
+            return;
+          case CallbackKind.WriteInformation1:
+            cmdlet.WriteInformation((InformationRecord)Param1!);
+            return;
+          case CallbackKind.WriteInformation2:
+            cmdlet.WriteInformation(Param1!, (string[])Param2!);
+            return;
+          case CallbackKind.WriteProgress:
+            cmdlet.WriteProgress((ProgressRecord)Param1!);
+            return;
+          case CallbackKind.WriteCommandDetail:
+            cmdlet.WriteCommandDetail((string)Param1!);
+            return;
+        }
+      }
+
+      private void ProcessSendBeforeStop(Cmdlet cmdlet, Exception? e, TaskCompletionSource<object?> sink)
+      {
+        throw new NotImplementedException();
+      }
+
+      private void ProcessInvalid()
+      {
+        throw new InvalidOperationException("Invalid value for 'Callback.Kind': " + Kind.ToString());
       }
     }
   }
