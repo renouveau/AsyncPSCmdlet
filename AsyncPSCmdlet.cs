@@ -356,7 +356,7 @@ namespace Renouveau.ForPowerShell
     [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
     private readonly struct Callback
     {
-      internal Callback(CallbackKind kind, object? param1, object? param2, TaskCompletionSource<object?>? sink)
+      internal Callback(CallbackKind kind, object? param1, object? param2, TaskCompletionSource<bool>? sink)
       {
         Kind = kind;
         Param1 = param1;
@@ -367,7 +367,7 @@ namespace Renouveau.ForPowerShell
       internal readonly CallbackKind Kind;
       internal readonly object? Param1;
       internal readonly object? Param2;
-      internal readonly TaskCompletionSource<object?>? Sink;
+      internal readonly TaskCompletionSource<bool>? Sink;
 
       [DebuggerBrowsable(DebuggerBrowsableState.Never)]
       private string DebuggerDisplay
@@ -380,7 +380,7 @@ namespace Renouveau.ForPowerShell
 
       internal void ProcessBeforeStop(Cmdlet cmdlet, Exception? e)
       {
-        TaskCompletionSource<object?>? sink = Sink;
+        TaskCompletionSource<bool>? sink = Sink;
         if (sink is null)
           ProcessPostBeforeStop(cmdlet, e);
         else
@@ -389,7 +389,7 @@ namespace Renouveau.ForPowerShell
 
       internal void ProcessAfterStop(Exception? e)
       {
-        TaskCompletionSource<object?>? sink = Sink;
+        TaskCompletionSource<bool>? sink = Sink;
         if (sink is null)
           return;
         if (e is null)
@@ -449,7 +449,7 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ProcessSendBeforeStop(Cmdlet cmdlet, Exception? e, TaskCompletionSource<object?> sink)
+      private void ProcessSendBeforeStop(Cmdlet cmdlet, Exception? e, TaskCompletionSource<bool> sink)
       {
         switch (Kind)
         {
@@ -535,12 +535,12 @@ namespace Renouveau.ForPowerShell
 
 #pragma warning disable CA1031 // Allow propagating arbitrary exceptions to the continuation.
 
-      private void ReceiveAction(TaskCompletionSource<object?> sink)
+      private void ReceiveAction(TaskCompletionSource<bool> sink)
       {
         try
         {
           ((Action)Param1!)();
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -548,12 +548,12 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveWriteObject1(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveWriteObject1(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
           cmdlet.WriteObject(Param1!);
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -561,12 +561,12 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveWriteObject2(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveWriteObject2(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
           cmdlet.WriteObject(Param1!, Param2 is not null);
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -574,12 +574,12 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveWriteError(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveWriteError(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
           cmdlet.WriteError((ErrorRecord)Param1!);
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -587,12 +587,12 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveThrowTerminatingError(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveThrowTerminatingError(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
           cmdlet.ThrowTerminatingError((ErrorRecord)Param1!);
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -602,12 +602,12 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveWriteWarning(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveWriteWarning(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
           cmdlet.WriteWarning((string)Param1!);
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -615,12 +615,12 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveWriteVerbose(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveWriteVerbose(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
           cmdlet.WriteVerbose((string)Param1!);
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -628,12 +628,12 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveWriteDebug(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveWriteDebug(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
           cmdlet.WriteDebug((string)Param1!);
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -641,12 +641,12 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveWriteInformation1(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveWriteInformation1(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
           cmdlet.WriteInformation((InformationRecord)Param1!);
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -654,12 +654,12 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveWriteInformation2(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveWriteInformation2(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
           cmdlet.WriteInformation(Param1!, (string[])Param2!);
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -667,12 +667,12 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveWriteProgress(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveWriteProgress(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
           cmdlet.WriteProgress((ProgressRecord)Param1!);
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -680,12 +680,12 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveWriteCommandDetail(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveWriteCommandDetail(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
           cmdlet.WriteCommandDetail((string)Param1!);
-          sink.TrySetResult(null);
+          sink.TrySetResult(false);
         }
         catch (Exception e)
         {
@@ -693,7 +693,7 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveShouldContinue2(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveShouldContinue2(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
@@ -705,7 +705,7 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveShouldContinue4(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveShouldContinue4(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
@@ -719,7 +719,7 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveShouldContinue5(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveShouldContinue5(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
@@ -733,7 +733,7 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveShouldProcess1(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveShouldProcess1(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
@@ -745,7 +745,7 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveShouldProcess2(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveShouldProcess2(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
@@ -757,7 +757,7 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveShouldProcess3(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveShouldProcess3(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
@@ -770,7 +770,7 @@ namespace Renouveau.ForPowerShell
         }
       }
 
-      private void ReceiveShouldProcess4(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      private void ReceiveShouldProcess4(Cmdlet cmdlet, TaskCompletionSource<bool> sink)
       {
         try
         {
@@ -1217,7 +1217,7 @@ namespace Renouveau.ForPowerShell
         {
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
-          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.Invoke, action, null, source));
           return source.Task;
@@ -1237,7 +1237,7 @@ namespace Renouveau.ForPowerShell
         {
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
-          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteObject1, sendToPipeline, null, source));
           return source.Task;
@@ -1257,7 +1257,7 @@ namespace Renouveau.ForPowerShell
         {
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
-          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteObject2, sendToPipeline, enumerateCollection ? this : null, source));
           return source.Task;
@@ -1279,7 +1279,7 @@ namespace Renouveau.ForPowerShell
         {
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
-          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteError, errorRecord, null, source));
           return source.Task;
@@ -1326,7 +1326,7 @@ namespace Renouveau.ForPowerShell
         {
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
-          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteWarning, text, null, source));
           return source.Task;
@@ -1349,7 +1349,7 @@ namespace Renouveau.ForPowerShell
         {
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
-          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteVerbose, text, null, source));
           return source.Task;
@@ -1372,7 +1372,7 @@ namespace Renouveau.ForPowerShell
         {
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
-          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteDebug, text, null, source));
           return source.Task;
@@ -1395,7 +1395,7 @@ namespace Renouveau.ForPowerShell
         {
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
-          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteInformation1, informationRecord, null, source));
           return source.Task;
@@ -1415,7 +1415,7 @@ namespace Renouveau.ForPowerShell
         {
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
-          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteInformation2, messageData, tags, source));
           return source.Task;
@@ -1438,7 +1438,7 @@ namespace Renouveau.ForPowerShell
         {
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
-          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteProgress, progressRecord, null, source));
           return source.Task;
@@ -1461,7 +1461,7 @@ namespace Renouveau.ForPowerShell
         {
           if (Expired || owner.CurrentWorkItem != this)
             ThrowExpired();
-          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteCommandDetail, text, null, source));
           return source.Task;
