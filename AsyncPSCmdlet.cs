@@ -648,6 +648,8 @@ namespace Renouveau.ForPowerShell
       /// </summary>
       public bool Expired { get; private set; }
 
+      #region explicit implementations of ITransientDispatcher members
+
       TransientDispatcher ITransientDispatcher.Create(string name, AsyncPSCmdlet owner, Queue<Callback> callbacks, Func<TransientDispatcher, Task?> work)
       {
         return new TransientDispatcher(name, owner, callbacks, work);
@@ -671,6 +673,9 @@ namespace Renouveau.ForPowerShell
           }
         }
       }
+
+      #endregion explicit implementations of ITransientDispatcher members
+
     }
   }
 
