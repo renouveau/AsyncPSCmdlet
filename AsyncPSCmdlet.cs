@@ -316,13 +316,221 @@ namespace Renouveau.ForPowerShell
 
       private void ProcessSendBeforeStop(Cmdlet cmdlet, Exception? e, TaskCompletionSource<object?> sink)
       {
-        throw new NotImplementedException();
+        switch (Kind)
+        {
+          default:
+          case CallbackKind.Invalid:
+            ProcessInvalid();
+            return;
+          case CallbackKind.Action:
+            if (e is null)
+              ReceiveAction(sink);
+            else
+              sink.TrySetException(e);
+            return;
+          case CallbackKind.WriteObject1:
+            ReceiveWriteObject1(cmdlet, sink);
+            return;
+          case CallbackKind.WriteObject2:
+            ReceiveWriteObject2(cmdlet, sink);
+            return;
+          case CallbackKind.WriteError:
+            ReceiveWriteError(cmdlet, sink);
+            return;
+          case CallbackKind.ThrowTerminatingError:
+            ReceiveThrowTerminatingError(cmdlet, sink);
+            return;
+          case CallbackKind.WriteWarning:
+            ReceiveWriteWarning(cmdlet, sink);
+            return;
+          case CallbackKind.WriteVerbose:
+            ReceiveWriteVerbose(cmdlet, sink);
+            return;
+          case CallbackKind.WriteDebug:
+            ReceiveWriteDebug(cmdlet, sink);
+            return;
+          case CallbackKind.WriteInformation1:
+            ReceiveWriteInformation1(cmdlet, sink);
+            return;
+          case CallbackKind.WriteInformation2:
+            ReceiveWriteInformation2(cmdlet, sink);
+            return;
+          case CallbackKind.WriteProgress:
+            ReceiveWriteProgress(cmdlet, sink);
+            return;
+          case CallbackKind.WriteCommandDetail:
+            ReceiveWriteCommandDetail(cmdlet, sink);
+            return;
+        }
       }
 
       private void ProcessInvalid()
       {
         throw new InvalidOperationException("Invalid value for 'Callback.Kind': " + Kind.ToString());
       }
+
+#pragma warning disable CA1031 // Allow propagating arbitrary exceptions to the continuation.
+
+      private void ReceiveAction(TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          ((Action)Param1!)();
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveWriteObject1(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          cmdlet.WriteObject(Param1!);
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveWriteObject2(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          cmdlet.WriteObject(Param1!, Param2 is not null);
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveWriteError(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          cmdlet.WriteError((ErrorRecord)Param1!);
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveThrowTerminatingError(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          cmdlet.ThrowTerminatingError((ErrorRecord)Param1!);
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+          // Propagate this terminating error.
+          throw;
+        }
+      }
+
+      private void ReceiveWriteWarning(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          cmdlet.WriteWarning((string)Param1!);
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveWriteVerbose(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          cmdlet.WriteVerbose((string)Param1!);
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveWriteDebug(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          cmdlet.WriteDebug((string)Param1!);
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveWriteInformation1(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          cmdlet.WriteInformation((InformationRecord)Param1!);
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveWriteInformation2(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          cmdlet.WriteInformation(Param1!, (string[])Param2!);
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveWriteProgress(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          cmdlet.WriteProgress((ProgressRecord)Param1!);
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveWriteCommandDetail(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          cmdlet.WriteCommandDetail((string)Param1!);
+          sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+#pragma warning restore CA1031
+
     }
   }
 
