@@ -5,9 +5,11 @@
 // https://github.com/renouveau/AsyncPSCmdlet
 
 using System;
+using System.Diagnostics;
 using System.Management.Automation;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Renouveau.ForPowerShell
 {
@@ -208,5 +210,54 @@ namespace Renouveau.ForPowerShell
   }
 
   #endregion CallbackKind
+
+  #region Callback
+
+  public abstract partial class AsyncPSCmdlet
+  {
+    [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
+    private readonly struct Callback
+    {
+      internal Callback(CallbackKind kind, object? param1, object? param2, TaskCompletionSource<object?>? sink)
+      {
+        Kind = kind;
+        Param1 = param1;
+        Param2 = param2;
+        Sink = sink;
+      }
+
+      internal readonly CallbackKind Kind;
+      internal readonly object? Param1;
+      internal readonly object? Param2;
+      internal readonly TaskCompletionSource<object?>? Sink;
+
+      [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+      private string DebuggerDisplay
+      {
+        get
+        {
+          return (Sink is null ? "Post, Kind = " : "Send, Kind = ") + Kind.ToString();
+        }
+      }
+
+      internal void ProcessBeforeStop(Cmdlet cmdlet, Exception? e)
+      {
+        throw new NotImplementedException();
+      }
+
+      internal void ProcessAfterStop(Exception? e)
+      {
+        TaskCompletionSource<object?>? sink = Sink;
+        if (sink is null)
+          return;
+        if (e is null)
+          sink.TrySetCanceled();
+        else
+          sink.TrySetException(e);
+      }
+    }
+  }
+
+  #endregion Callback
 
 }
