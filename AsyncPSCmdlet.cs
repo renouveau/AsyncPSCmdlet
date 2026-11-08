@@ -676,6 +676,64 @@ namespace Renouveau.ForPowerShell
 
       #endregion explicit implementations of ITransientDispatcher members
 
+      private void ThrowExpired()
+      {
+        throw new InvalidOperationException("The work item '" + Name + "' has expired.");
+      }
+
+      private static void ThrowAction()
+      {
+        throw new ArgumentNullException("action");
+      }
+
+      #region fire-and-forget
+
+      /// <summary>
+      /// Posts a delegate to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This is a fire-and-forget method.
+      /// Any exception thrown out of <c><paramref name="action"/></c> will cause the work item to expire.
+      /// </summary>
+      public void InvokeAndForget(Action action)
+      {
+        if (action is null)
+          ThrowAction();
+        AsyncPSCmdlet owner = Owner;
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.Action, action, null, null));
+        }
+      }
+
+      #endregion fire-and-forget
+
+      #region awaited tasks
+
+      /// <summary>
+      /// Sends a delegate to the <c><see cref="AsyncPSCmdlet"/></c> and propagates the exception back.
+      /// </summary>
+      public Task InvokeAsync(Action action)
+      {
+        if (action is null)
+          ThrowAction();
+        AsyncPSCmdlet owner = Owner;
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.Action, action, null, source));
+          return source.Task;
+        }
+      }
+
+      #endregion awaited tasks
+
     }
   }
 
