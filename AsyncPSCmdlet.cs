@@ -708,6 +708,42 @@ namespace Renouveau.ForPowerShell
         }
       }
 
+      /// <summary>
+      /// Posts a request to call <c><see cref="Cmdlet.WriteObject(object)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This is a fire-and-forget method.
+      /// Any exception thrown during the call will cause the work item to expire.
+      /// </summary>
+      public void WriteObjectAndForget(object? postToPipeline)
+      {
+        AsyncPSCmdlet owner = Owner;
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteObject1, postToPipeline, null, null));
+        }
+      }
+
+      /// <summary>
+      /// Posts a request to call <c><see cref="Cmdlet.WriteObject(object, bool)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This is a fire-and-forget method.
+      /// Any exception thrown during the call will cause the work item to expire.
+      /// </summary>
+      public void WriteObjectAndForget(object? postToPipeline, bool enumerateCollection)
+      {
+        AsyncPSCmdlet owner = Owner;
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteObject2, postToPipeline, enumerateCollection ? this : null, null));
+        }
+      }
+
       #endregion fire-and-forget
 
       #region awaited tasks
@@ -728,6 +764,42 @@ namespace Renouveau.ForPowerShell
           TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.Action, action, null, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.WriteObject(object)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// </summary>
+      public Task WriteObjectAsync(object? sendToPipeline)
+      {
+        AsyncPSCmdlet owner = Owner;
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteObject1, sendToPipeline, null, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.WriteObject(object, bool)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// </summary>
+      public Task WriteObjectAsync(object? sendToPipeline, bool enumerateCollection)
+      {
+        AsyncPSCmdlet owner = Owner;
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteObject2, sendToPipeline, enumerateCollection ? this : null, source));
           return source.Task;
         }
       }
