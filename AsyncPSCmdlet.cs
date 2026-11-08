@@ -500,19 +500,26 @@ namespace Renouveau.ForPowerShell
             ReceiveWriteCommandDetail(cmdlet, sink);
             return;
           case CallbackKind.ShouldContinue2:
-            throw new NotImplementedException();
+            ReceiveShouldContinue2(cmdlet, sink);
+            return;
           case CallbackKind.ShouldContinue4:
-            throw new NotImplementedException();
+            ReceiveShouldContinue4(cmdlet, sink);
+            return;
           case CallbackKind.ShouldContinue5:
-            throw new NotImplementedException();
+            ReceiveShouldContinue5(cmdlet, sink);
+            return;
           case CallbackKind.ShouldProcess1:
-            throw new NotImplementedException();
+            ReceiveShouldProcess1(cmdlet, sink);
+            return;
           case CallbackKind.ShouldProcess2:
-            throw new NotImplementedException();
+            ReceiveShouldProcess2(cmdlet, sink);
+            return;
           case CallbackKind.ShouldProcess3:
-            throw new NotImplementedException();
+            ReceiveShouldProcess3(cmdlet, sink);
+            return;
           case CallbackKind.ShouldProcess4:
-            throw new NotImplementedException();
+            ReceiveShouldProcess4(cmdlet, sink);
+            return;
         }
       }
 
@@ -679,6 +686,97 @@ namespace Renouveau.ForPowerShell
         {
           cmdlet.WriteCommandDetail((string)Param1!);
           sink.TrySetResult(null);
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveShouldContinue2(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          sink.TrySetResult(cmdlet.ShouldContinue((string)Param1!, (string)Param2!));
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveShouldContinue4(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          ShouldContinueProcessPack pack = (ShouldContinueProcessPack)Param1!;
+          ShouldContinueProcessBox box = (ShouldContinueProcessBox)Param2!;
+          sink.TrySetResult(cmdlet.ShouldContinue(pack.Param1, pack.Param2, ref box.YesToAll, ref box.NoToAll));
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveShouldContinue5(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          ShouldContinueProcessPack pack = (ShouldContinueProcessPack)Param1!;
+          ShouldContinueProcessBox box = (ShouldContinueProcessBox)Param2!;
+          sink.TrySetResult(cmdlet.ShouldContinue(pack.Param1, pack.Param2, pack.Param3 is not null, ref box.YesToAll, ref box.NoToAll));
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveShouldProcess1(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          sink.TrySetResult(cmdlet.ShouldProcess((string)Param1!));
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveShouldProcess2(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          sink.TrySetResult(cmdlet.ShouldProcess((string)Param1!, (string)Param2!));
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveShouldProcess3(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          ShouldContinueProcessPack pack = (ShouldContinueProcessPack)Param1!;
+          sink.TrySetResult(cmdlet.ShouldProcess(pack.Param1, pack.Param2, pack.Param3));
+        }
+        catch (Exception e)
+        {
+          sink.TrySetException(e);
+        }
+      }
+
+      private void ReceiveShouldProcess4(Cmdlet cmdlet, TaskCompletionSource<object?> sink)
+      {
+        try
+        {
+          ShouldContinueProcessPack pack = (ShouldContinueProcessPack)Param1!;
+          ShouldContinueProcessBox box = (ShouldContinueProcessBox)Param2!;
+          sink.TrySetResult(cmdlet.ShouldProcess(pack.Param1, pack.Param2, pack.Param3, out box.ShouldProcessReason));
         }
         catch (Exception e)
         {
