@@ -287,10 +287,67 @@ namespace Renouveau.ForPowerShell
       WriteInformation2,
       WriteProgress,
       WriteCommandDetail,
+      ShouldContinue2,
+      ShouldContinue4,
+      ShouldContinue5,
+      ShouldProcess1,
+      ShouldProcess2,
+      ShouldProcess3,
+      ShouldProcess4,
     }
   }
 
   #endregion CallbackKind
+
+  #region parameter packs
+
+  public abstract partial class AsyncPSCmdlet
+  {
+    private sealed class ShouldContinueProcessPack
+    {
+      public ShouldContinueProcessPack(string? param1, string? param2, string? param3)
+      {
+        Param1 = param1;
+        Param2 = param2;
+        Param3 = param3;
+      }
+
+      internal readonly string? Param1;
+      internal readonly string? Param2;
+      internal readonly string? Param3;
+    }
+
+#pragma warning disable CA1051 // The consumer should have by-reference access to the boxed instances.
+    /// <summary>
+    /// Provides a boxed site for by-reference parameters to <c>ShouldContinue</c> and <c>ShouldProcess</c>.
+    /// </summary>
+    protected sealed class ShouldContinueProcessBox
+    {
+      /// <summary>
+      /// Represents the <c>shouldProcessReason</c> parameter of <c><see cref="Cmdlet.ShouldProcess(string, string, string, out ShouldProcessReason)"/></c>.
+      /// </summary>
+      public ShouldProcessReason ShouldProcessReason;
+
+      /// <summary>
+      /// Represents the <c>yesToAll</c> parameter of
+      /// <c><see cref="Cmdlet.ShouldContinue(string, string, ref bool, ref bool)"/></c>
+      /// and
+      /// <c><see cref="Cmdlet.ShouldContinue(string, string, bool, ref bool, ref bool)"/></c>.
+      /// </summary>
+      public bool YesToAll;
+
+      /// <summary>
+      /// Represents the <c>noToAll</c> parameter of
+      /// <c><see cref="Cmdlet.ShouldContinue(string, string, ref bool, ref bool)"/></c>
+      /// and
+      /// <c><see cref="Cmdlet.ShouldContinue(string, string, bool, ref bool, ref bool)"/></c>.
+      /// </summary>
+      public bool NoToAll;
+    }
+#pragma warning restore CA1051
+  }
+
+  #endregion parameter packs
 
   #region Callback
 
@@ -347,7 +404,7 @@ namespace Renouveau.ForPowerShell
         {
           default:
           case CallbackKind.Invalid:
-            ProcessInvalid();
+            ProcessPostInvalid();
             return;
           case CallbackKind.Invoke:
             if (e is null)
@@ -398,7 +455,7 @@ namespace Renouveau.ForPowerShell
         {
           default:
           case CallbackKind.Invalid:
-            ProcessInvalid();
+            ProcessSendInvalid();
             return;
           case CallbackKind.Invoke:
             if (e is null)
@@ -442,12 +499,31 @@ namespace Renouveau.ForPowerShell
           case CallbackKind.WriteCommandDetail:
             ReceiveWriteCommandDetail(cmdlet, sink);
             return;
+          case CallbackKind.ShouldContinue2:
+            throw new NotImplementedException();
+          case CallbackKind.ShouldContinue4:
+            throw new NotImplementedException();
+          case CallbackKind.ShouldContinue5:
+            throw new NotImplementedException();
+          case CallbackKind.ShouldProcess1:
+            throw new NotImplementedException();
+          case CallbackKind.ShouldProcess2:
+            throw new NotImplementedException();
+          case CallbackKind.ShouldProcess3:
+            throw new NotImplementedException();
+          case CallbackKind.ShouldProcess4:
+            throw new NotImplementedException();
         }
       }
 
-      private void ProcessInvalid()
+      private void ProcessPostInvalid()
       {
-        throw new InvalidOperationException("Invalid value for 'Callback.Kind': " + Kind.ToString());
+        throw new InvalidOperationException("Invalid value for 'Callback.Kind' in fire-and-forget: " + Kind.ToString());
+      }
+
+      private void ProcessSendInvalid()
+      {
+        throw new InvalidOperationException("Invalid value for 'Callback.Kind' in awaited tasks: " + Kind.ToString());
       }
 
 #pragma warning disable CA1031 // Allow propagating arbitrary exceptions to the continuation.
