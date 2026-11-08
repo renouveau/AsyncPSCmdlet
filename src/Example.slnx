@@ -1,0 +1,14 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="Any CPU" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path="../README.md" />
+    <File Path="../LICENSE" />
+    <File Path=".editorconfig" />
+    <File Path="../AsyncPSCmdlet.cs" />
+  </Folder>
+  <Project Path="Example.csproj" />
+</Solution>
