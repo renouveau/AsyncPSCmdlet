@@ -67,6 +67,7 @@ namespace Renouveau.ForPowerShell
   {
     private static readonly Func<Cmdlet, CancellationToken> get_PipelineStopToken_ = CreateGetPipelineStopTokenDelegate();
 
+#pragma warning disable IDE0079 // This suppression is necessary for .NET Framework.
 #pragma warning disable CA2263 // .NET Framework doesn't have generic `CreateDelegate`.
     private static Func<Cmdlet, CancellationToken> CreateGetPipelineStopTokenDelegate()
     {
@@ -76,6 +77,7 @@ namespace Renouveau.ForPowerShell
       return (Func<Cmdlet, CancellationToken>)prop.GetMethod!.CreateDelegate(typeof(Func<Cmdlet, CancellationToken>));
     }
 #pragma warning restore CA2263
+#pragma warning restore IDE0079
 
     private static CancellationToken GetPipelineStopTokenShim(Cmdlet that) { return CancellationToken.None; }
 
