@@ -24,6 +24,15 @@ namespace Renouveau.ForPowerShell
 {
   /// <summary>
   /// Base class for cmdlets that call into asynchronous code.
+  /// This class is modified from <a href="https://github.com/renouveau/AsyncPSCmdlet">Renouveau AsyncPSCmdlet</a>
+  /// version <a href="https://github.com/renouveau/AsyncPSCmdlet/tree/v0.1.0"><c>0.1.0</c></a>.
+  /// <br /><br />
+  /// If you start from a non-tagged commit,
+  /// use
+  /// <code>
+  /// commit <a href="https://github.com/renouveau/AsyncPSCmdlet/tree/commit-hash"><c>commit-hash</c></a>.
+  /// </code>
+  /// instead.
   /// </summary>
   public abstract partial class AsyncPSCmdlet : PSCmdlet
   {
