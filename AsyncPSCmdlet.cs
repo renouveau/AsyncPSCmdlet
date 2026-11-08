@@ -48,13 +48,17 @@ namespace Renouveau.ForPowerShell
     /// </list>
     /// Therefore, we roll our own managed thread identity.
     /// </summary>
+    [DebuggerDisplay("managed thread {" + nameof(Numeric) + "}")]
     private sealed class ManagedThreadIdentity
     {
+      [DebuggerBrowsable(DebuggerBrowsableState.Never)]
       [ThreadStatic]
       private static ManagedThreadIdentity? current_;
 
+      [DebuggerBrowsable(DebuggerBrowsableState.Never)]
       internal static ManagedThreadIdentity Current { get { return current_ ??= new ManagedThreadIdentity(); } }
 
+      [DebuggerBrowsable(DebuggerBrowsableState.Never)]
       internal readonly int Numeric;
 
       private ManagedThreadIdentity() { Numeric = Environment.CurrentManagedThreadId; }
@@ -67,6 +71,7 @@ namespace Renouveau.ForPowerShell
 
   public abstract partial class AsyncPSCmdlet
   {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static readonly Func<Cmdlet, CancellationToken> get_PipelineStopToken_ = CreateGetPipelineStopTokenDelegate();
 
 #pragma warning disable IDE0079 // This suppression is necessary for .NET Framework.
@@ -83,6 +88,7 @@ namespace Renouveau.ForPowerShell
 
     private static CancellationToken GetPipelineStopTokenShim(Cmdlet that) { return CancellationToken.None; }
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private CancellationTokenSource? spts_;
 
     private CancellationTokenSource StopProcessingTokenSource
