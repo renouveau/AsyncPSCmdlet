@@ -738,7 +738,8 @@ namespace Renouveau.ForPowerShell
       {
         throw new InvalidOperationException("Communication methods cannot be called on thread "
           + Owner.Affinity.Numeric.ToString(CultureInfo.InvariantCulture)
-          + ", on which the instance was constructed.");
+          + ", on which the instance was constructed. "
+          + "(The numeric identifier might be stale if the thread has exited.)");
       }
 
       private void ThrowExpired()
