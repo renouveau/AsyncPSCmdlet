@@ -6,6 +6,8 @@
     <LangVersion>14.0</LangVersion>
     <ImplicitUsings>disable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
     <!-- Guards are manually opt-out. -->
     <Features>strict</Features><!-- https://github.com/dotnet/roslyn/issues/29319 -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
