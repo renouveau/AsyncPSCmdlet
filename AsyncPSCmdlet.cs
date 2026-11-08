@@ -10,6 +10,7 @@
 #endif
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Management.Automation;
 using System.Reflection;
@@ -540,5 +541,80 @@ namespace Renouveau.ForPowerShell
   }
 
   #endregion Callback
+
+  #region TransientDispatcher
+
+  public abstract partial class AsyncPSCmdlet
+  {
+    /// <summary>
+    /// Makes accessibility effectively <c><see langword="private"/></c> in <c><see cref="AsyncPSCmdlet"/></c>.
+    /// </summary>
+    private interface ITransientDispatcher
+    {
+      string Name { get; }
+      TransientDispatcher Create(string name, AsyncPSCmdlet owner, Queue<Callback> callbacks, Func<TransientDispatcher, Task?> work);
+      bool Expired { get; set; }
+      Task? ThreadPoolWorker();
+    }
+
+    /// <summary>
+    /// Represents a work item submitted to the thread pool by <c><see cref="AsyncPSCmdlet"/></c>
+    /// and
+    /// provides the cmdlet services from any thread for the duration of the work item.
+    /// </summary>
+    [DebuggerDisplay(nameof(Name) + " = {" + nameof(Name) + "}")]
+    protected sealed class TransientDispatcher : ITransientDispatcher
+    {
+      private TransientDispatcher(string name, AsyncPSCmdlet owner, Queue<Callback> callbacks, Func<TransientDispatcher, Task?> work)
+      {
+        Name = name;
+        Owner = owner;
+        Callbacks = callbacks;
+        Work = work;
+        Expired = false;
+      }
+
+      /// <summary>
+      /// Gets a description of the work item.
+      /// </summary>
+      public string Name { get; }
+
+      private readonly AsyncPSCmdlet Owner;
+      private readonly Queue<Callback> Callbacks;
+      private readonly Func<TransientDispatcher, Task?> Work;
+
+      /// <summary>
+      /// Determines whether the work item has expired.
+      /// </summary>
+      public bool Expired { get; private set; }
+
+      TransientDispatcher ITransientDispatcher.Create(string name, AsyncPSCmdlet owner, Queue<Callback> callbacks, Func<TransientDispatcher, Task?> work)
+      {
+        return new TransientDispatcher(name, owner, callbacks, work);
+      }
+
+      bool ITransientDispatcher.Expired { get { return Expired; } set { Expired = value; } }
+
+      async Task? ITransientDispatcher.ThreadPoolWorker()
+      {
+        try
+        {
+          Owner.ThrowIfShouldStop();
+          await (Work(this) ?? Task.CompletedTask).ConfigureAwait(false);
+        }
+        finally
+        {
+          object sr = Owner.SyncRoot;
+          lock (sr)
+          {
+            Expired = true;
+            Monitor.PulseAll(sr);
+          }
+        }
+      }
+    }
+  }
+
+  #endregion TransientDispatcher
 
 }
