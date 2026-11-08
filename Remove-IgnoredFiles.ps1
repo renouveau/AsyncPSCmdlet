@@ -4,8 +4,8 @@
 SPDX-FileCopyrightText: Copyright 2026 Ji Luo, all rights reserved.
 SPDX-License-Identifier: MIT
 
-This file is part of Renouveau Caffeine, available under the MIT license.
-https://github.com/renouveau/caffeine
+This file is part of Renouveau AsyncPSCmdlet, available under the MIT license.
+https://github.com/renouveau/AsyncPSCmdlet
 
 .SYNOPSIS
 Removes certain ignored files, then reports remaining untracked/ignored files (as reported by `git clean --dry-run -x -- <repo_root>`) in the verbose stream.
@@ -15,9 +15,9 @@ Removes the following.
 
 ```text
 src/.vs
-src/*/*.csproj.user
-src/*/bin
-src/*/obj
+src/*.csproj.user
+src/bin
+src/obj
 ```
 
 This script can be invoked from anywhere, but it will always work on the script file location.
@@ -31,6 +31,8 @@ Begin
   # In case the non-wildcard targets do not exist...
   @(
     'src/.vs',
+    'src/bin',
+    'src/obj',
     $null
   ) | ForEach-Object { If ($_ -ne $null) {
     New-Item ([System.IO.Path]::Combine($PSScriptRoot, $_)) -Type 'Directory' -Force -ErrorAction 'Ignore';
@@ -41,9 +43,9 @@ End
 {
   @(
     'src/.vs',
-    'src/*/*.csproj.user',
-    'src/*/bin',
-    'src/*/obj',
+    'src/*.csproj.user',
+    'src/bin',
+    'src/obj',
     $null
   ) | ForEach-Object { If ($_ -ne $null) {
     Remove-Item ([System.IO.Path]::Combine($PSScriptRoot, $_)) -Force -Recurse;
