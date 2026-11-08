@@ -749,6 +749,11 @@ namespace Renouveau.ForPowerShell
         throw new ArgumentNullException("text");
       }
 
+      private static void ThrowInformationRecord()
+      {
+        throw new ArgumentNullException("informationRecord");
+      }
+
       #region fire-and-forget
 
       /// <summary>
@@ -911,6 +916,45 @@ namespace Renouveau.ForPowerShell
             ThrowExpired();
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteDebug, text, null, null));
+        }
+      }
+
+      /// <summary>
+      /// Posts a request to call <c><see cref="Cmdlet.WriteInformation(InformationRecord)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="informationRecord"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public void WriteInformationAndForget(InformationRecord informationRecord)
+      {
+        if (informationRecord is null)
+          ThrowInformationRecord();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteInformation1, informationRecord, null, null));
+        }
+      }
+
+      /// <summary>
+      /// Posts a request to call <c><see cref="Cmdlet.WriteInformation(object, string[])"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// </summary>
+      public void WriteInformationAndForget(object? messageData, string[]? tags)
+      {
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteInformation2, messageData, tags, null));
         }
       }
 
@@ -1112,6 +1156,49 @@ namespace Renouveau.ForPowerShell
           TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteDebug, text, null, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.WriteInformation(InformationRecord)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="informationRecord"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public Task WriteInformationAsync(InformationRecord informationRecord)
+      {
+        if (informationRecord is null)
+          ThrowInformationRecord();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteInformation1, informationRecord, null, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.WriteInformation(object, string[])"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// </summary>
+      public Task WriteInformationAsync(object? messageData, string[]? tags)
+      {
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<object?> source = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.WriteInformation2, messageData, tags, source));
           return source.Task;
         }
       }
