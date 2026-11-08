@@ -6,6 +6,7 @@
 
 using System;
 using System.Management.Automation;
+using System.Reflection;
 using System.Threading;
 
 namespace Renouveau.ForPowerShell
@@ -59,5 +60,123 @@ namespace Renouveau.ForPowerShell
   }
 
   #endregion ManagedThreadIdentity
+
+  #region PipelineStopToken, StopProcessingToken, ShouldStop, ThrowIfShouldStop, StopProcessing, StopProcessingExtras
+
+  public abstract partial class AsyncPSCmdlet
+  {
+    private static readonly Func<Cmdlet, CancellationToken> get_PipelineStopToken_ = CreateGetPipelineStopTokenDelegate();
+
+#pragma warning disable CA2263 // .NET Framework doesn't have generic `CreateDelegate`.
+    private static Func<Cmdlet, CancellationToken> CreateGetPipelineStopTokenDelegate()
+    {
+      PropertyInfo? prop = typeof(Cmdlet).GetProperty(nameof(PipelineStopToken));
+      if (prop is null)
+        return new Func<Cmdlet, CancellationToken>(GetPipelineStopTokenShim);
+      return (Func<Cmdlet, CancellationToken>)prop.GetMethod!.CreateDelegate(typeof(Func<Cmdlet, CancellationToken>));
+    }
+#pragma warning restore CA2263
+
+    private static CancellationToken GetPipelineStopTokenShim(Cmdlet that) { return CancellationToken.None; }
+
+    private CancellationTokenSource? spts_;
+
+    private CancellationTokenSource StopProcessingTokenSource
+    {
+      get { return spts_ ?? GetSptsRare(); }
+    }
+
+    private CancellationTokenSource GetSptsRare()
+    {
+      CancellationTokenSource standby = new CancellationTokenSource();
+      return Interlocked.CompareExchange(ref spts_, standby, null) ?? standby;
+    }
+
+    /// <summary>
+    /// For PowerShell 7.6+, the same as <c><see cref="Cmdlet"/>.PipelineStopToken</c>;
+    /// for lower versions, returns <c><see cref="CancellationToken.None"/></c>.
+    /// </summary>
+    public CancellationToken PipelineStopToken
+    {
+      get { return get_PipelineStopToken_(this); }
+    }
+
+    /// <summary>
+    /// Gets the token that is canceled by <c><see cref="StopProcessing()"/></c>.
+    /// This is <em>separate</em> from <c><see cref="PipelineStopToken"/></c>.
+    /// </summary>
+    public CancellationToken StopProcessingToken
+    {
+      get { return StopProcessingTokenSource.Token; }
+    }
+
+    /// <summary>
+    /// Gets whether processing should stop.
+    /// </summary>
+    public bool ShouldStop
+    {
+      get
+      {
+        CancellationTokenSource? spts = spts_;
+        return Stopping || get_PipelineStopToken_(this).IsCancellationRequested || ((spts is not null) && spts.IsCancellationRequested);
+      }
+    }
+
+    /// <summary>
+    /// Throws <c><see cref="PipelineStoppedException"/></c> if <c><see cref="ShouldStop"/></c> is <c><see langword="true"/></c>.
+    /// </summary>
+    protected void ThrowIfShouldStop()
+    {
+      if (get_PipelineStopToken_(this).IsCancellationRequested)
+        ThrowPipelineStopped();
+      CancellationTokenSource? spts = spts_;
+      if (Stopping || ((spts is not null) && spts.IsCancellationRequested))
+        ThrowStopProcessing();
+    }
+
+    private static void ThrowPipelineStopped()
+    {
+      throw new PipelineStoppedException();
+    }
+
+    private static void ThrowStopProcessing()
+    {
+      throw new PipelineStoppedException("The method 'Cmdlet.StopProcessing' has been called.");
+    }
+
+    /// <summary>
+    /// <list type="number">
+    /// <item>Cancel <c><see cref="StopProcessingToken"/></c>.</item>
+    /// <item>Call <c><see cref="StopProcessingExtras()"/></c>.</item>
+    /// <item>Call the <c><see langword="base"/></c> implementation, <c><see cref="Cmdlet.StopProcessing()"/></c>.</item>
+    /// </list>
+    /// </summary>
+    protected sealed override void StopProcessing()
+    {
+      try
+      {
+        StopProcessingTokenSource.Cancel();
+      }
+      finally
+      {
+        try
+        {
+          StopProcessingExtras();
+        }
+        finally
+        {
+          base.StopProcessing();
+        }
+      }
+    }
+
+    /// <summary>
+    /// This method is called by <c><see cref="StopProcessing()"/></c>.
+    /// The default implementation does nothing.
+    /// </summary>
+    protected virtual void StopProcessingExtras() { }
+  }
+
+  #endregion PipelineStopToken, StopProcessingToken, ShouldStop, ThrowIfShouldStop, StopProcessing, StopProcessingExtras
 
 }
