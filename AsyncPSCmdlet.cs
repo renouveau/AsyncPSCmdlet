@@ -3,3 +3,16 @@
 
 // This file is part of Renouveau AsyncPSCmdlet, available under the MIT license.
 // https://github.com/renouveau/AsyncPSCmdlet
+
+using System.Management.Automation;
+
+namespace Renouveau.ForPowerShell
+{
+  /// <summary>
+  /// Base class for cmdlets that call into asynchronous code.
+  /// </summary>
+  public abstract partial class AsyncPSCmdlet : PSCmdlet
+  {
+  }
+
+}
