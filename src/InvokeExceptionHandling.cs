@@ -29,20 +29,26 @@ namespace Renouveau.ForPowerShell
         {
           await dispatcher.InvokeAsync(() =>
           {
+            // This exception is propagated out of `await`.
             throw new ArgumentException("1");
           });
         }
         catch (ArgumentException ex)
         {
+          // And it is caught here.
           Console.WriteLine("Writing exception object.");
           await dispatcher.WriteObjectAsync(ex);
           Console.WriteLine("Done writing exception object.");
         }
+        // This exception causes the work item to terminate early.
+        // This is bad usage, so avoid it!
         dispatcher.InvokeAndForget(() => throw new ArgumentException("2"));
         Console.WriteLine("After InvokeAndForget throw 2");
+        // Nevertheless, the thread pool delegate can continue.
         await Task.Delay(500);
         try
         {
+          // This call fails synchronously because the work item has expired.
           await dispatcher.InvokeAsync(() => throw new ArgumentException("3"));
         }
         catch (InvalidOperationException ex)
@@ -51,6 +57,7 @@ namespace Renouveau.ForPowerShell
         }
         catch (ArgumentException ex)
         {
+          // This `catch` should not be reached.
           Console.WriteLine("ArgumentException: " + ex);
         }
       });
