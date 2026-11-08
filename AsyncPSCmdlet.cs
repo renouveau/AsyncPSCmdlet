@@ -952,6 +952,16 @@ namespace Renouveau.ForPowerShell
         throw new ArgumentNullException("progressRecord");
       }
 
+      private static void ThrowToAll()
+      {
+        throw new ArgumentNullException("toAll");
+      }
+
+      private static void ThrowShouldProcessReason()
+      {
+        throw new ArgumentNullException("shouldProcessReason");
+      }
+
       #region fire-and-forget
 
       /// <summary>
@@ -1464,6 +1474,159 @@ namespace Renouveau.ForPowerShell
           TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
           Monitor.PulseAll(sr);
           Callbacks.Enqueue(new Callback(CallbackKind.WriteCommandDetail, text, null, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.ShouldContinue(string, string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// </summary>
+      public Task<bool> ShouldContinueAsync(string? query, string? caption)
+      {
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.ShouldContinue2, query, caption, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.ShouldContinue(string, string, ref bool, ref bool)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="toAll"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public Task<bool> ShouldContinueAsync(string? query, string? caption, ShouldContinueProcessBox toAll)
+      {
+        if (toAll is null)
+          ThrowToAll();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+          ShouldContinueProcessPack pack = new ShouldContinueProcessPack(query, caption, null);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.ShouldContinue4, pack, toAll, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.ShouldContinue(string, string, bool, ref bool, ref bool)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="toAll"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public Task<bool> ShouldContinueAsync(string? query, string? caption, bool hasSecurityImpact, ShouldContinueProcessBox toAll)
+      {
+        if (toAll is null)
+          ThrowToAll();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+          ShouldContinueProcessPack pack = new ShouldContinueProcessPack(query, caption, hasSecurityImpact ? "hasSecurityImpact = true" : null);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.ShouldContinue5, pack, toAll, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.ShouldProcess(string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// </summary>
+      public Task<bool> ShouldProcessAsync(string? target)
+      {
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.ShouldProcess1, target, null, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.ShouldProcess(string, string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// </summary>
+      public Task<bool> ShouldProcessAsync(string? target, string? action)
+      {
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.ShouldProcess2, target, action, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.ShouldProcess(string, string, string)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// </summary>
+      public Task<bool> ShouldProcessAsync(string? verboseDescription, string? verboseWarning, string? caption)
+      {
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+          ShouldContinueProcessPack pack = new ShouldContinueProcessPack(verboseDescription, verboseWarning, caption);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.ShouldProcess3, pack, null, source));
+          return source.Task;
+        }
+      }
+
+      /// <summary>
+      /// Sends a call of <c><see cref="Cmdlet.ShouldProcess(string, string, string, out ShouldProcessReason)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>.
+      /// This method does not allow <c><paramref name="shouldProcessReason"/></c> to be <c><see langword="null"/></c>.
+      /// </summary>
+      public Task<bool> ShouldProcessAsync(string? verboseDescription, string? verboseWarning, string? caption, ShouldContinueProcessBox shouldProcessReason)
+      {
+        if (shouldProcessReason is null)
+          ThrowShouldProcessReason();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          TaskCompletionSource<bool> source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+          ShouldContinueProcessPack pack = new ShouldContinueProcessPack(verboseDescription, verboseWarning, caption);
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.ShouldProcess4, pack, shouldProcessReason, source));
           return source.Task;
         }
       }
