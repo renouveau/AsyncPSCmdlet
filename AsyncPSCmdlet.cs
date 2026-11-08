@@ -822,6 +822,30 @@ namespace Renouveau.ForPowerShell
         }
       }
 
+      /// <summary>
+      /// Posts a request to call <c><see cref="Cmdlet.WriteError(ErrorRecord)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>
+      /// and
+      /// throws <c><see cref="PipelineStoppedException"/></c>.
+      /// </summary>
+      /// <exception cref="PipelineStoppedException"/>
+      public void ThrowTerminatingErrorAndForget(ErrorRecord errorRecord)
+      {
+        if (errorRecord is null)
+          ThrowErrorRecord();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.ThrowTerminatingError, errorRecord, null, null));
+        }
+        throw new PipelineStoppedException("The method 'ThrowTerminatingErrorAndForget' has been called.");
+      }
+
       #endregion fire-and-forget
 
       #region awaited tasks
@@ -908,6 +932,30 @@ namespace Renouveau.ForPowerShell
           Callbacks.Enqueue(new Callback(CallbackKind.WriteError, errorRecord, null, source));
           return source.Task;
         }
+      }
+
+      /// <summary>
+      /// <strong>Posts</strong> a call of <c><see cref="Cmdlet.ThrowTerminatingError(ErrorRecord)"/></c> to the <c><see cref="AsyncPSCmdlet"/></c>
+      /// and
+      /// throws <c><see cref="PipelineStoppedException"/></c> <strong>synchronously</strong>.
+      /// </summary>
+      /// <exception cref="PipelineStoppedException"/>
+      public Task ThrowTerminatingErrorAsync(ErrorRecord errorRecord)
+      {
+        if (errorRecord is null)
+          ThrowErrorRecord();
+        AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
+        object sr = owner.SyncRoot;
+        lock (sr)
+        {
+          if (Expired || owner.CurrentWorkItem != this)
+            ThrowExpired();
+          Monitor.PulseAll(sr);
+          Callbacks.Enqueue(new Callback(CallbackKind.ThrowTerminatingError, errorRecord, null, null));
+        }
+        throw new PipelineStoppedException("The method 'ThrowTerminatingErrorAsync' has been called.");
       }
 
       #endregion awaited tasks
