@@ -242,7 +242,7 @@ namespace Renouveau.ForPowerShell
       {
         get
         {
-          return (Sink is null ? "Post, Kind = " : "Send, Kind = ") + Kind.ToString();
+          return (Sink is null ? "fire-and-forget: " : "await: ") + Kind.ToString();
         }
       }
 
