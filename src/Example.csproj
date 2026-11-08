@@ -4,6 +4,16 @@
     <TargetFrameworks>net461;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <LangVersion>14.0</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Guards are manually opt-out. -->
+    <Features>strict</Features><!-- https://github.com/dotnet/roslyn/issues/29319 -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <WarningLevel>9999</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- We have our own schedule of deprecation. -->
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.0.0" PrivateAssets="all" />
