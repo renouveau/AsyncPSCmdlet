@@ -871,6 +871,7 @@ namespace Renouveau.ForPowerShell
         }
         catch (PipelineStoppedException)
         {
+          dispatcher.Expired = true;
           try
           {
             DrainQueueAfterStop(queue, null, sr);
@@ -883,6 +884,7 @@ namespace Renouveau.ForPowerShell
         }
         catch (Exception e)
         {
+          dispatcher.Expired = true;
           // The likely cause is that a fire-and-forget callback faulted.
           // It could also arise from extreme conditions such as out of memory.
           try
@@ -898,7 +900,6 @@ namespace Renouveau.ForPowerShell
         finally
         {
           CurrentWorkItem = null;
-          dispatcher.Expired = true;
         }
       }
       // We're now outside the lock.
