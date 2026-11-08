@@ -151,6 +151,12 @@ namespace Renouveau.ForPowerShell
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private CancellationTokenSource? spts_;
 
+    /// <summary>
+    /// It's very difficult to dispose of this object correctly.
+    /// In its current implementation,
+    /// an undisposed-of token source leaks at most one <c><see cref="ManualResetEvent"/></c>,
+    /// so we let the finalizer of <c><see cref="ManualResetEvent"/></c> take care of that.
+    /// </summary>
     private CancellationTokenSource StopProcessingTokenSource
     {
       get { return spts_ ?? GetSptsRare(); }
