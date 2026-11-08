@@ -622,7 +622,7 @@ namespace Renouveau.ForPowerShell
     /// and
     /// provides the cmdlet services from any thread for the duration of the work item.
     /// </summary>
-    [DebuggerDisplay(nameof(Name) + " = {" + nameof(Name) + "}")]
+    [DebuggerDisplay(nameof(Expired) + " = {" + nameof(Expired) + "}, " + nameof(Name) + " = {" + nameof(Name) + ", nq}")]
     protected sealed class TransientDispatcher : ITransientDispatcher
     {
       private TransientDispatcher(string name, AsyncPSCmdlet owner, Queue<Callback> callbacks, Func<TransientDispatcher, Task?> work)
@@ -655,6 +655,7 @@ namespace Renouveau.ForPowerShell
         return new TransientDispatcher(name, owner, callbacks, work);
       }
 
+      [DebuggerBrowsable(DebuggerBrowsableState.Never)]
       bool ITransientDispatcher.Expired { get { return Expired; } set { Expired = value; } }
 
       async Task? ITransientDispatcher.ThreadPoolWorker()
