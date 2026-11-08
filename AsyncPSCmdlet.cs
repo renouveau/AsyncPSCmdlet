@@ -722,6 +722,13 @@ namespace Renouveau.ForPowerShell
 
       #endregion explicit implementations of ITransientDispatcher members
 
+      private void ThrowRepulsion()
+      {
+        throw new InvalidOperationException("Communication methods cannot be called on thread "
+          + Owner.Affinity.Numeric.ToString(CultureInfo.InvariantCulture)
+          + ", on which the instance was constructed.");
+      }
+
       private void ThrowExpired()
       {
         throw new InvalidOperationException("The work item '" + Name + "' has expired.");
@@ -742,6 +749,8 @@ namespace Renouveau.ForPowerShell
         if (action is null)
           ThrowAction();
         AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
         object sr = owner.SyncRoot;
         lock (sr)
         {
@@ -758,6 +767,8 @@ namespace Renouveau.ForPowerShell
       public void WriteObjectAndForget(object? postToPipeline)
       {
         AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
         object sr = owner.SyncRoot;
         lock (sr)
         {
@@ -774,6 +785,8 @@ namespace Renouveau.ForPowerShell
       public void WriteObjectAndForget(object? postToPipeline, bool enumerateCollection)
       {
         AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
         object sr = owner.SyncRoot;
         lock (sr)
         {
@@ -796,6 +809,8 @@ namespace Renouveau.ForPowerShell
         if (action is null)
           ThrowAction();
         AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
         object sr = owner.SyncRoot;
         lock (sr)
         {
@@ -814,6 +829,8 @@ namespace Renouveau.ForPowerShell
       public Task WriteObjectAsync(object? sendToPipeline)
       {
         AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
         object sr = owner.SyncRoot;
         lock (sr)
         {
@@ -832,6 +849,8 @@ namespace Renouveau.ForPowerShell
       public Task WriteObjectAsync(object? sendToPipeline, bool enumerateCollection)
       {
         AsyncPSCmdlet owner = Owner;
+        if (owner.Affinity == ManagedThreadIdentity.Current)
+          ThrowRepulsion();
         object sr = owner.SyncRoot;
         lock (sr)
         {
