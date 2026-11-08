@@ -220,18 +220,27 @@ namespace Renouveau.ForPowerShell
     {
       try
       {
-        StopProcessingTokenSource.Cancel();
-      }
-      finally
-      {
         try
         {
-          StopProcessingExtras();
+          StopProcessingTokenSource.Cancel();
         }
         finally
         {
-          base.StopProcessing();
+          try
+          {
+            StopProcessingExtras();
+          }
+          finally
+          {
+            base.StopProcessing();
+          }
         }
+      }
+      finally
+      {
+        object sr = SyncRoot;
+        lock (sr)
+          Monitor.PulseAll(sr);
       }
     }
 
