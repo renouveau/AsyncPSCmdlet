@@ -9,6 +9,8 @@
 #error This file requires .NET Framework 4.6.1+ or .NET 7.0+.
 #endif
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
