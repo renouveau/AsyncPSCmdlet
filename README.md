@@ -5,10 +5,15 @@
 To use this library,
 
 1. copy [`AsyncPSCmdlet.cs`](AsyncPSCmdlet.cs) to your project,
-2. modify [the namespace](AsyncPSCmdlet.cs#L23), and
-3. modify [the version-tracking comments of `AsyncPSCmdlet` class](AsyncPSCmdlet.cs#L28-L36).
+2. modify [the namespace](AsyncPSCmdlet.cs#L25), and
+3. modify [the version-tracking comments of `AsyncPSCmdlet` class](AsyncPSCmdlet.cs#L30-L38).
 
 ## change log
+
+**v0.2.1.**
+
+- Removed some unreachable code.
+- Improved debugging experience.
 
 **v0.2.0.**
 
