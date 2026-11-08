@@ -4,6 +4,11 @@
 // This file is part of Renouveau AsyncPSCmdlet, available under the MIT license.
 // https://github.com/renouveau/AsyncPSCmdlet
 
+#if NET461_OR_GREATER || NET7_0_OR_GREATER
+#else
+#error This file requires .NET Framework 4.6.1+ or .NET 7.0+.
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Management.Automation;
