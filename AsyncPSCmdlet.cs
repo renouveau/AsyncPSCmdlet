@@ -1718,10 +1718,27 @@ namespace Renouveau.ForPowerShell
     }
 #pragma warning restore CA1031
 
-    /// <inheritdoc cref="SendToThreadPool(Func{TransientDispatcher, Task?}, string?)"/>
-    protected void SendToThreadPool(Func<TransientDispatcher, Task?> work, [CallerFilePath] string path = "unknown_file", [CallerLineNumber] int line = -1, [CallerMemberName] string member = "unknown_member")
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private static readonly char[] PathSeps_ = { '\\', '/' };
+
+    private static string? GetAutoWorkItemName(string? path, int line, string? member)
     {
-      SendToThreadPool(work, path + ":" + line.ToString(CultureInfo.InvariantCulture) + " (" + member + ")");
+      if (string.IsNullOrEmpty(path))
+        path = "UnknownFile";
+      if (string.IsNullOrEmpty(member))
+        member = "UnknownMember";
+      int index = path!.LastIndexOfAny(PathSeps_);
+      string file = path;
+      if (0 <= index && index < path.Length - 1)
+        file = path.Substring(index + 1);
+      string strline = line.ToString(CultureInfo.InvariantCulture);
+      return member + " @ " + file + ":" + strline + " @ " + path + ":" + strline;
+    }
+
+    /// <inheritdoc cref="SendToThreadPool(Func{TransientDispatcher, Task?}, string?)"/>
+    protected void SendToThreadPool(Func<TransientDispatcher, Task?> work, [CallerFilePath] string? path = null, [CallerLineNumber] int line = -1, [CallerMemberName] string? member = null)
+    {
+      SendToThreadPool(work, GetAutoWorkItemName(path, line, member));
     }
 
     private static void ThrowWorkNull()
