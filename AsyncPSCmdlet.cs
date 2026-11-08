@@ -12,8 +12,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Management.Automation;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,17 +27,59 @@ namespace Renouveau.ForPowerShell
   /// </summary>
   public abstract partial class AsyncPSCmdlet : PSCmdlet
   {
+    /// <summary>
+    /// Initializes a new instance of <c><see cref="AsyncPSCmdlet"/></c>.
+    /// </summary>
+    protected AsyncPSCmdlet()
+    {
+      SyncRoot = new object();
+      Affinity = ManagedThreadIdentity.Current;
+      spts_ = null;
+      CurrentWorkItem = null;
+      ReusableCallbackQueue = null;
+    }
+
+    private readonly object SyncRoot;
+
+    private readonly struct UnlockGuard : IDisposable
+    {
+      private readonly object Target;
+
+      internal UnlockGuard(object target)
+      {
+        Target = target;
+        Monitor.Exit(target);
+      }
+
+      public void Dispose()
+      {
+        Exception? ex = null;
+        bool taken = false;
+      Retry:
+        // Obtaining the lock is very important because
+        // this type is used inside a `lock` statement.
+        try
+        {
+          Monitor.Enter(Target, ref taken);
+        }
+#pragma warning disable CA1031 // We handle crazy exceptions.
+        catch (Exception e)
+#pragma warning restore CA1031
+        {
+          ex = e;
+          if (!taken)
+            goto Retry;
+        }
+        if (ex is not null)
+          throw ex;
+      }
+    }
   }
 
   #region ManagedThreadIdentity
 
   public abstract partial class AsyncPSCmdlet
   {
-    /// <summary>
-    /// Initializes a new instance of <c><see cref="AsyncPSCmdlet"/></c>.
-    /// </summary>
-    protected AsyncPSCmdlet() { Affinity = ManagedThreadIdentity.Current; }
-
     private readonly ManagedThreadIdentity Affinity;
 
     /// <summary>
@@ -283,6 +328,9 @@ namespace Renouveau.ForPowerShell
           case CallbackKind.Action:
             if (e is null)
               ((Action)Param1!)();
+            // Skip any fire-and-forget delegates
+            // when a previous fire-and-forget callback faulted
+            // or something extreme happened.
             return;
           case CallbackKind.WriteObject1:
             cmdlet.WriteObject(Param1!);
@@ -333,6 +381,9 @@ namespace Renouveau.ForPowerShell
               ReceiveAction(sink);
             else
               sink.TrySetException(e);
+            // Do not attempt awaited delegates
+            // when a previous fire-and-forget callback faulted
+            // or something extreme happened.
             return;
           case CallbackKind.WriteObject1:
             ReceiveWriteObject1(cmdlet, sink);
@@ -599,7 +650,6 @@ namespace Renouveau.ForPowerShell
       {
         try
         {
-          Owner.ThrowIfShouldStop();
           await (Work(this) ?? Task.CompletedTask).ConfigureAwait(false);
         }
         finally
@@ -616,5 +666,151 @@ namespace Renouveau.ForPowerShell
   }
 
   #endregion TransientDispatcher
+
+  #region SendToThreadPool
+
+  public abstract partial class AsyncPSCmdlet
+  {
+    private static readonly ITransientDispatcher TransientDispatcherFactory = (ITransientDispatcher)FormatterServices.GetUninitializedObject(typeof(TransientDispatcher));
+
+    private ITransientDispatcher? CurrentWorkItem;
+    private Queue<Callback>? ReusableCallbackQueue;
+
+    /// <summary>
+    /// Sends a work item to the thread pool and waits for it to complete,
+    /// while allowing the work item to reenter
+    /// via the <c><see cref="TransientDispatcher"/></c> instance.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">
+    /// When <c><paramref name="work"/></c> is <c><see langword="null"/></c>.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// When the current thread is not the one on which <c><see langword="this"/></c> was constructed,
+    /// or
+    /// when a work item is in progress (this method cannot be reentered).
+    /// </exception>
+    /// <exception cref="PipelineStoppedException">
+    /// When <c><see cref="ShouldStop"/></c> is <c><see langword="true"/></c>.
+    /// </exception>
+#pragma warning disable CA1031 // Allow swallowing exceptions.
+    protected void SendToThreadPool(Func<TransientDispatcher, Task?> work, string? name)
+    {
+      if (work is null)
+        ThrowWorkNull();
+      if (Affinity != ManagedThreadIdentity.Current)
+        ThrowAffinity();
+      if (CurrentWorkItem is not null)
+        ThrowReentrancy();
+      ThrowIfShouldStop();
+      name ??= "unknown";
+      object sr = SyncRoot;
+      Queue<Callback> queue = ReusableCallbackQueue ?? new Queue<Callback>();
+      ITransientDispatcher dispatcher = TransientDispatcherFactory.Create(name, this, queue, work!);
+      Func<Task?> worker = dispatcher.ThreadPoolWorker;
+      Task? task = null;
+      lock (sr)
+      {
+        try
+        {
+          ReusableCallbackQueue = null;
+          CurrentWorkItem = dispatcher;
+          task = Task.Run(worker);
+          while (!dispatcher.Expired)
+          {
+            Monitor.Wait(sr);
+            ThrowIfShouldStop();
+            DrainQueueBeforeStop(queue, this, null, sr);
+          }
+          Debug.Assert(queue.Count == 0, "The callback queue must be empty if no exceptions occurred on the main thread.");
+          ReusableCallbackQueue = queue;
+        }
+        catch (PipelineStoppedException)
+        {
+          try
+          {
+            DrainQueueAfterStop(queue, null, sr);
+          }
+          catch (Exception e)
+          {
+            DrainQueueAfterStop(queue, e, sr);
+          }
+          throw;
+        }
+        catch (Exception e)
+        {
+          // The likely cause is that a fire-and-forget callback faulted.
+          // It could also arise from extreme conditions such as out of memory.
+          try
+          {
+            DrainQueueBeforeStop(queue, this, e, sr);
+          }
+          catch (PipelineStoppedException)
+          {
+            DrainQueueAfterStop(queue, e, sr);
+          }
+          throw;
+        }
+        finally
+        {
+          CurrentWorkItem = null;
+          dispatcher.Expired = true;
+        }
+      }
+      // We're now outside the lock.
+      task.Wait();
+    }
+#pragma warning restore CA1031
+
+    /// <inheritdoc cref="SendToThreadPool(Func{TransientDispatcher, Task?}, string?)"/>
+    protected void SendToThreadPool(Func<TransientDispatcher, Task?> work, [CallerFilePath] string path = "unknown_file", [CallerLineNumber] int line = -1, [CallerMemberName] string member = "unknown_member")
+    {
+      SendToThreadPool(work, path + ":" + line.ToString(CultureInfo.InvariantCulture) + " (" + member + ")");
+    }
+
+    private static void ThrowWorkNull()
+    {
+      throw new ArgumentNullException("work");
+    }
+
+    private void ThrowAffinity()
+    {
+      throw new InvalidOperationException("The method 'AsyncPSCmdlet.SendToThreadPool' is called on thread "
+        + Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture)
+        + ", but it can only be called on thread "
+        + Affinity.Numeric.ToString(CultureInfo.InvariantCulture)
+        + ", on which the instance was constructed. "
+        + "(The numeric identifier(s) might be stale if the thread(s) has/have exited.)");
+    }
+
+    private void ThrowReentrancy()
+    {
+      throw new InvalidOperationException("The method 'AsyncPSCmdlet.SendToThreadPool' cannot be reentered. "
+        + "The current work item in progress is '"
+        + CurrentWorkItem!.Name
+        + "'.");
+    }
+
+    private static void DrainQueueBeforeStop(Queue<Callback> queue, Cmdlet cmdlet, Exception? e, object sr)
+    {
+      while (queue.Count != 0)
+      {
+        Callback cb = queue.Dequeue();
+        using (new UnlockGuard(sr))
+          cb.ProcessBeforeStop(cmdlet, e);
+      }
+    }
+
+    private static void DrainQueueAfterStop(Queue<Callback> queue, Exception? e, object sr)
+    {
+      while (queue.Count != 0)
+      {
+        Callback cb = queue.Dequeue();
+        using (new UnlockGuard(sr))
+          cb.ProcessAfterStop(e);
+      }
+    }
+  }
+
+  #endregion SendToThreadPool
 
 }
