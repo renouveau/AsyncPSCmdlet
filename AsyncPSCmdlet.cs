@@ -625,6 +625,8 @@ namespace Renouveau.ForPowerShell
     /// <item>
     /// Entry to public methods is validated eagerly and exceptions are thrown synchronously.
     /// This is true even for <c>XxxAsync</c>.
+    /// Calls are queued synchronously and linearly, implying a strong ordering.
+    /// A call returns once the request is queued.
     /// </item>
     /// <item>
     /// Public methods <c>XxxAndForget</c> are fire-and-forget.
@@ -632,6 +634,7 @@ namespace Renouveau.ForPowerShell
     /// </item>
     /// <item>
     /// Public methods <c>XxxAsync</c> produce (awaitable) tasks.
+    /// The task completes when the request is performed by the <c><see cref="AsyncPSCmdlet"/></c> on its thread.
     /// Exceptions thrown by the delegate or during <c>WriteXxx</c> are reported back to the task.
     /// </item>
     /// <item>
